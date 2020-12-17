@@ -1,29 +1,54 @@
-load("//:rollup-globals.bzl", "ROLLUP_GLOBALS")
-load("//src/cdk:config.bzl", "CDK_ENTRYPOINTS")
-load("//src/cdk-experimental:config.bzl", "CDK_EXPERIMENTAL_ENTRYPOINTS")
-load("//src/material:config.bzl", "MATERIAL_ENTRYPOINTS", "MATERIAL_TESTING_ENTRYPOINTS")
-load("//src/material-experimental:config.bzl", "MATERIAL_EXPERIMENTAL_ENTRYPOINTS", "MATERIAL_EXPERIMENTAL_TESTING_ENTRYPOINTS")
+load("//tools:defaults.bzl", "ng_module", "ng_package", "ng_test_library", "ng_web_test_suite")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files([
-    "LICENSE",
-    "scss-bundle.config.json",
-])
-
-genrule(
-    name = "rollup_globals",
-    outs = ["rollup_globals.json"],
-    cmd = "echo '%s' > $@" % ROLLUP_GLOBALS,
+ng_module(
+    name = "google-maps",
+    srcs = glob(
+        ["**/*.ts"],
+        exclude = [
+            "**/*.spec.ts",
+        ],
+    ),
+    module_name = "@angular/google-maps",
+    deps = [
+        "//src:dev_mode_types",
+        "@npm//@angular/common",
+        "@npm//@angular/core",
+        "@npm//@types/googlemaps",
+        "@npm//rxjs",
+    ],
 )
 
-entryPoints = ["cdk/%s" % e for e in CDK_ENTRYPOINTS] + \
-              ["cdk-experimental/%s" % e for e in CDK_EXPERIMENTAL_ENTRYPOINTS] + \
-              ["material/%s" % e for e in MATERIAL_ENTRYPOINTS + MATERIAL_TESTING_ENTRYPOINTS] + \
-              ["material-experimental/%s" % e for e in MATERIAL_EXPERIMENTAL_ENTRYPOINTS + MATERIAL_EXPERIMENTAL_TESTING_ENTRYPOINTS]
+# Creates the @angular/google-maps package published to npm
+ng_package(
+    name = "npm_package",
+    srcs = ["package.json"],
+    entry_point = ":public-api.ts",
+    entry_point_name = "google-maps",
+    tags = ["release-package"],
+    deps = [":google-maps"],
+)
 
-genrule(
-    name = "entry_points_manifest",
-    outs = ["entry_points_manifest.json"],
-    cmd = "echo '%s' > $@" % entryPoints,
+filegroup(
+    name = "source-files",
+    srcs = glob(["**/*.ts"]),
+)
+
+ng_test_library(
+    name = "unit_test_sources",
+    srcs = glob(
+        ["**/*.spec.ts"],
+        exclude = ["**/*.e2e.spec.ts"],
+    ),
+    deps = [
+        ":google-maps",
+        "//src/google-maps/testing",
+        "@npm//@angular/platform-browser",
+    ],
+)
+
+ng_web_test_suite(
+    name = "unit_tests",
+    deps = [":unit_test_sources"],
 )

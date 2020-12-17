@@ -1,92 +1,132 @@
-# Official components for Angular
-[![npm version](https://badge.fury.io/js/%40angular%2Fcdk.svg)](https://www.npmjs.com/package/@angular/cdk)
-[![Build status](https://circleci.com/gh/angular/components.svg?style=svg)](https://circleci.com/gh/angular/components)
-[![Gitter](https://badges.gitter.im/angular/components.svg)](https://gitter.im/angular/material2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+# Angular Google Maps component
 
-The Angular team builds and maintains both common UI components and tools to help you build your
-own custom components. The team maintains several npm packages.
+This component provides a Google Maps Angular component that implements the
+[Google Maps JavaScript API](https://developers.google.com/maps/documentation/javascript/tutorial).
+File any bugs against the [angular/components repo](https://github.com/angular/components/issues).
 
-| Package                   | Description                                                                         | Docs             |
-| ------------------------- | ----------------------------------------------------------------------------------- | ---------------- |
-| `@angular/cdk`            | Library that helps you author custom UI components with common interaction patterns | [Docs][cdk-docs] |
-| `@angular/material`       | [Material Design][] UI components for Angular applications                          | [Docs][mat-docs] |
-| `@angular/google-maps`    | Angular components built on top of the [Google Maps JavaScript API][]               | [Docs][map-docs] |
-| `@angular/youtube-player` | Angular component built on top of the [YouTube Player API][]                        | [Docs][ytp-docs] |
+## Installation
 
+To install, run `npm install @angular/google-maps`.
 
-#### Quick links
-[Documentation, demos, and guides][mat-docs] |
-[Frequently Asked Questions](FAQ.md) |
-[Community Google group](https://groups.google.com/forum/#!forum/angular-material2) |
-[Contributing](https://github.com/angular/components/blob/master/CONTRIBUTING.md) |
-[StackBlitz Template](https://stackblitz.com/fork/components-issue)
+## Loading the API
 
-## Getting started
+- First follow [these steps](https://developers.google.com/maps/gmp-get-started) to get an API key that can be used to load Google Maps.
+- Load the [Google Maps JavaScript API](https://developers.google.com/maps/documentation/javascript/tutorial#Loading_the_Maps_API).
+- The Google Maps JavaScript API must be loaded before the `GoogleMap` component.
 
-See our [Getting Started Guide][getting-started] if you're building your first project with Angular
-Material.
+```html
+<!-- index.html -->
+<!doctype html>
+<head>
+  ...
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY">
+  </script>
+</head>
+```
 
+## Lazy Loading the API
 
-## Contributing
+The API can be loaded when the component is actually used by using the Angular HttpClient jsonp method to make sure that the component doesn't load until after the API has loaded.
 
-If you'd like to contribute, please follow our [contributing guidelines][contributing]. Please see
-our [`help wanted`][help-wanted] label for a list of issues with good opportunities for
-contribution.
+```typescript
+// google-maps-demo.module.ts
 
-## What we're working on now (Q4 2020):
-* Continuing to create new, API-compatible versions of the Angular Material components backed by
-[MDC Web][] ([see @jelbourn's ng-conf talk](https://youtu.be/4EXQKP-Sihw?t=891)). Much of our effort
-is dedicated towards rolling out these new versions of the components across Angular apps
-inside Google. This work will payoff with the following benefits:
-  * Dramatically improve consistency with the Material Design spec, which has changed significantly
-    since Angular Material's 2016 inception.
-  * Introduce a new theming API for component density, a top feature request.
-  * Fix a number of longstanding accessibility bugs.
-  * Increase number of people working to continuously improve the components on an on-going basis
-    (both the Angular team and the Material Design team).
-* Continue work on virtual-scroll support for cdk/table.
-* Switching to new Sass module system (`@use`)
+import { NgModule } from '@angular/core';
+import { GoogleMapsModule } from '@angular/google-maps';
+import { CommonModule } from '@angular/common';
+import { HttpClientModule, HttpClientJsonpModule } from '@angular/common/http';
 
+import { GoogleMapsDemoComponent } from './google-maps-demo.component';
 
-## About the team
-The Angular Components team is part of the Angular team at Google. The team includes both Google
-employees and community contributors from around the globe.
-
-Our team has two primary goals:
-* Build high-quality UI components that developers can drop into existing applications 
-* Provide tools that help developers build their own custom components with common interaction
-patterns
+@NgModule({
+  declarations: [
+    GoogleMapsDemoComponent,
+  ],
+  imports: [
+    CommonModule,
+    GoogleMapsModule,
+    HttpClientModule,
+    HttpClientJsonpModule,
+  ],
+  exports: [
+    GoogleMapsDemoComponent,
+  ],
+})
+export class GoogleMapsDemoModule {}
 
 
-What do we mean by "high-quality" components?
-* Internationalized and accessible so that all users can use them.
-* Straightforward APIs that don't confuse developers.
-* Behave as expected across a wide variety of use-cases without bugs.
-* Behavior is well-tested with both unit and integration tests.
-* Customizable within the bounds of the Material Design specification.
-* Performance cost is minimized.
-* Code is clean and well-documented to serve as an example for Angular developers.
+// google-maps-demo.component.ts
 
-## Browser and screen reader support
-The Angular Components team supports the most recent two versions of all major browsers:
-Chrome (including Android), Firefox, Safari (including iOS), and IE11 / Edge.
+import { Component } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
-We aim for great user experience with the following screen readers:
-* **Windows**: NVDA and JAWS with IE11 / FF / Chrome.
-* **macOS**: VoiceOver with Safari / Chrome.
-* **iOS**: VoiceOver with Safari
-* **Android**: Android Accessibility Suite (formerly TalkBack) with Chrome.
-* **Chrome OS**: ChromeVox with Chrome.
+@Component({
+  selector: 'google-maps-demo',
+  templateUrl: './google-maps-demo.component.html',
+})
+export class GoogleMapsDemoComponent {
+  apiLoaded: Observable<boolean>;
 
+  constructor(httpClient: HttpClient) {
+    this.apiLoaded = httpClient.jsonp('https://maps.googleapis.com/maps/api/js?key=YOUR_KEY_HERE', 'callback')
+        .pipe(
+          map(() => true),
+          catchError(() => of(false)),
+        );
+  }
+}
+```
 
-[Material Design]: https://material.io
-[Google Maps JavaScript API]: https://developers.google.com/maps/documentation/javascript/tutorial
-[YouTube Player API]: https://developers.google.com/youtube/iframe_api_reference
-[MDC Web]: https://github.com/material-components/material-components-web/
-[cdk-docs]: https://material.angular.io/cdk/categories
-[mat-docs]: https://material.angular.io
-[map-docs]: https://github.com/angular/components/blob/master/src/google-maps/README.md
-[ytp-docs]: https://github.com/angular/components/blob/master/src/youtube-player/README.md
-[getting-started]: https://material.angular.io/guide/getting-started
-[contributing]: https://github.com/angular/components/blob/master/CONTRIBUTING.md
-[help-wanted]: https://github.com/angular/components/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22
+```html
+<!-- google-maps-demo.component.html -->
+
+<div *ngIf="apiLoaded | async">
+  <google-map></google-map>
+</div>
+```
+
+## Components
+
+- [`GoogleMap`](./google-map/README.md)
+- [`MapMarker`](./map-marker/README.md)
+- [`MapInfoWindow`](./map-info-window/README.md)
+- [`MapPolyline`](./map-polyline/README.md)
+- [`MapPolygon`](./map-polygon/README.md)
+- [`MapRectangle`](./map-rectangle/README.md)
+- [`MapCircle`](./map-circle/README.md)
+- [`MapGroundOverlay`](./map-ground-overlay/README.md)
+- [`MapKmlLayer`](./map-kml-layer/README.md)
+- [`MapTrafficLayer`](./map-traffic-layer/README.md)
+- [`MapTransitLayer`](./map-transit-layer/README.md)
+- [`MapBicyclingLayer`](./map-bicycling-layer/README.md)
+
+## The Options Input
+
+The Google Maps components implement all of the options for their respective objects from the Google Maps JavaScript API through an `options` input, but they also have specific inputs for some of the most common options. For example, the Google Maps component could have its options set either in with a google.maps.MapOptions object:
+
+```html
+<google-map [options]="options"></google-map>
+```
+
+```typescript
+options: google.maps.MapOptions = {
+  center: {lat: 40, lng: -20},
+  zoom: 4
+};
+```
+
+It can also have individual options set for some of the most common options:
+
+```html
+<google-map [center]="center"
+            [zoom]="zoom"></google-map>
+```
+
+```typescript
+center: google.maps.LatLngLiteral = {lat: 40, lng: -20};
+zoom = 4;
+```
+
+Not every option has its own input. See the API for each component to see if the option has a dedicated input or if it should be set in the options input.
